@@ -1,18 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import VenueCard from '../components/VenueCard';
 
-import {
-    Container,
-    Box,
-    Typography,
-    Button,
-    Grid,
-    Paper,
-    Avatar,
-    CircularProgress
-} from '@mui/material';
+// MUI Components
+import { Container, Box, Typography, Button, Grid, Paper, Avatar, CircularProgress, IconButton } from '@mui/material';
 
 // Icons
 import SearchIcon from '@mui/icons-material/Search';
@@ -24,18 +16,14 @@ import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
 
 const LandingPage = () => {
     const navigate = useNavigate();
-    const [popularVenues, setPopularVenues] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [popularVenues, setPopularVenues] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
 
-    useEffect(() => {
+    React.useEffect(() => {
         const fetchPopularVenues = async () => {
             try {
                 const response = await axios.get('http://localhost:5000/api/venues/popular');
-                const venuesWithPrice = response.data.map(v => ({
-                    ...v,
-                    startingPrice: '150',
-                    sportTypes: 'Badminton,Tennis'
-                }));
+                const venuesWithPrice = response.data.map(v => ({ ...v, startingPrice: '150', sportTypes: 'Badminton,Tennis' }));
                 setPopularVenues(venuesWithPrice);
             } catch (error) {
                 console.error("Could not fetch popular venues", error);
@@ -51,25 +39,23 @@ const LandingPage = () => {
     };
 
     return (
-        <Box sx={{ backgroundColor: '#111' }}>
+        <Box sx={{ backgroundColor: '#121212', color: '#fff' }}>
             {/* Hero Section */}
             <Box
                 sx={{
                     pt: 14,
                     pb: 14,
                     textAlign: 'center',
-                    background: 'linear-gradient(135deg, #000, #333)',
-                    color: '#eee'
+                    background: 'linear-gradient(rgba(18, 18, 18, 0.8), rgba(18, 18, 18, 0.8)), url(https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=1935)',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
                 }}
             >
                 <Container maxWidth="md">
                     <Typography variant="h2" fontWeight="bold" gutterBottom sx={{ letterSpacing: 1 }}>
                         Find Your Game, Book Your Court
                     </Typography>
-                    <Typography
-                        variant="h5"
-                        sx={{ mb: 4, color: 'rgba(238,238,238,0.85)' }}
-                    >
+                    <Typography variant="h5" sx={{ my: 4, color: 'rgba(255,255,255,0.7)' }}>
                         The easiest way to discover and book sports facilities in your area.
                     </Typography>
                     <Button
@@ -77,17 +63,16 @@ const LandingPage = () => {
                         size="large"
                         onClick={() => navigate('/venues')}
                         sx={{
-                            background: '#333',
-                            color: '#eee',
+                            background: 'linear-gradient(90deg, #ff6a00, #ee0979)',
+                            color: '#fff',
                             fontWeight: 600,
-                            px: 4,
-                            py: 1.5,
+                            px: 5, py: 1.5,
                             borderRadius: '30px',
-                            boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
+                            boxShadow: '0 4px 15px rgba(255, 106, 0, 0.4)',
+                            transition: 'all 0.3s ease',
                             '&:hover': {
-                                backgroundColor: '#444',
-                                transform: 'translateY(-2px)',
-                                transition: 'all 0.3s ease'
+                                transform: 'translateY(-3px)',
+                                boxShadow: '0 6px 20px rgba(238, 9, 121, 0.5)',
                             }
                         }}
                     >
@@ -97,61 +82,29 @@ const LandingPage = () => {
             </Box>
 
             {/* How It Works */}
-            <Container maxWidth="lg" sx={{ py: 8 }}>
-                <Typography variant="h4" align="center" fontWeight="bold" color="#eee">
-                    How It Works
-                </Typography>
+            <Container maxWidth="lg" sx={{ py: 10 }}>
+                <Typography variant="h4" align="center" fontWeight="bold">How It Works</Typography>
                 <Grid container spacing={5} sx={{ mt: 5 }}>
                     {[
-                        {
-                            icon: <SearchIcon fontSize="large" />,
-                            title: 'Find',
-                            text: 'Search our extensive list of local venues by sport, location, or price.'
-                        },
-                        {
-                            icon: <EventAvailableIcon fontSize="large" />,
-                            title: 'Book',
-                            text: 'Select your desired date and time slot, and confirm instantly.'
-                        },
-                        {
-                            icon: <SportsScoreIcon fontSize="large" />,
-                            title: 'Play',
-                            text: 'Show up at the venue and enjoy your game!'
-                        }
+                        { icon: <SearchIcon fontSize="large" />, title: 'Find', text: 'Search our extensive list of local venues by sport, location, or price.' },
+                        { icon: <EventAvailableIcon fontSize="large" />, title: 'Book', text: 'Select your desired date and time slot, and confirm instantly.' },
+                        { icon: <SportsScoreIcon fontSize="large" />, title: 'Play', text: 'Show up at the venue and enjoy your game!' }
                     ].map((step, idx) => (
                         <Grid key={idx} item xs={12} md={4} textAlign="center">
-                            <Avatar
-                                sx={{
-                                    bgcolor: '#333',
-                                    color: '#eee',
-                                    width: 70,
-                                    height: 70,
-                                    mx: 'auto',
-                                    mb: 2,
-                                    boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
-                                }}
-                            >
-                                {step.icon}
-                            </Avatar>
-                            <Typography variant="h6" fontWeight="bold" gutterBottom color="#eee">
-                                {idx + 1}. {step.title}
-                            </Typography>
-                            <Typography color="#aaa">{step.text}</Typography>
+                            <Avatar sx={{ bgcolor: '#222', color: '#ff6a00', width: 70, height: 70, mx: 'auto', mb: 2, border: '2px solid #ff6a00' }}>{step.icon}</Avatar>
+                            <Typography variant="h6" fontWeight="bold" gutterBottom>{idx + 1}. {step.title}</Typography>
+                            <Typography color="rgba(255,255,255,0.7)">{step.text}</Typography>
                         </Grid>
                     ))}
                 </Grid>
             </Container>
 
             {/* Popular Venues */}
-            <Box sx={{ bgcolor: '#222', py: 8 }}>
+            <Box sx={{ bgcolor: '#1a1a1a', py: 10 }}>
                 <Container maxWidth="lg">
-                    <Typography variant="h4" align="center" fontWeight="bold" color="#eee">
-                        Popular Venues Near You
-                    </Typography>
+                    <Typography variant="h4" align="center" fontWeight="bold">Popular Venues Near You</Typography>
                     {loading ? (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                            <CircularProgress sx={{ color: '#eee' }} />
-                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress color="primary" /></Box>
                     ) : (
                         <Grid container spacing={4} sx={{ mt: 4 }}>
                             {popularVenues.map((venue) => (
@@ -165,11 +118,9 @@ const LandingPage = () => {
             </Box>
 
             {/* Featured Sports */}
-            <Box sx={{ py: 8, background: '#1a1a1a' }}>
+            <Box sx={{ py: 10 }}>
                 <Container maxWidth="md">
-                    <Typography variant="h4" align="center" fontWeight="bold" color="#eee">
-                        Any Sport, Any Time
-                    </Typography>
+                    <Typography variant="h4" align="center" fontWeight="bold">Any Sport, Any Time</Typography>
                     <Grid container spacing={4} sx={{ mt: 4 }} justifyContent="center">
                         {[
                             { icon: <SportsCricketIcon sx={{ fontSize: 40, color: '#eee' }} />, label: 'Cricket' },
@@ -180,18 +131,7 @@ const LandingPage = () => {
                             <Grid key={idx} item textAlign="center">
                                 <Paper
                                     elevation={3}
-                                    sx={{
-                                        p: 3,
-                                        minWidth: 120,
-                                        borderRadius: 3,
-                                        transition: 'all 0.3s ease',
-                                        cursor: 'pointer',
-                                        bgcolor: '#333',
-                                        '&:hover': {
-                                            transform: 'translateY(-5px)',
-                                            boxShadow: '0 8px 20px rgba(0,0,0,0.5)'
-                                        }
-                                    }}
+                                    sx={{ p: 3, minWidth: 120, borderRadius: 3, transition: 'all 0.3s ease', cursor: 'pointer', bgcolor: '#222', '&:hover': { transform: 'translateY(-5px)', boxShadow: '0 8px 20px rgba(0,0,0,0.5)' } }}
                                     onClick={() => handleSportSearch(sport.label)}
                                 >
                                     {sport.icon}
@@ -205,27 +145,22 @@ const LandingPage = () => {
 
             {/* Final CTA */}
             <Container maxWidth="md" sx={{ py: 10, textAlign: 'center' }}>
-                <Typography variant="h4" fontWeight="bold" gutterBottom color="#eee">
-                    Ready to Get in the Game?
-                </Typography>
-                <Typography variant="h6" color="#aaa" sx={{ mb: 4 }}>
-                    Join thousands of players and hundreds of facilities on QuickCourt today.
-                </Typography>
+                <Typography variant="h4" fontWeight="bold" gutterBottom>Ready to Get in the Game?</Typography>
+                <Typography variant="h6" color="rgba(255,255,255,0.7)" sx={{ mb: 4 }}>Join thousands of players and hundreds of facilities on QuickCourt today.</Typography>
                 <Button
                     variant="contained"
                     size="large"
                     onClick={() => navigate('/register')}
                     sx={{
-                        background: 'linear-gradient(90deg, #333, #555)',
-                        px: 5,
-                        py: 1.5,
+                        background: 'linear-gradient(90deg, #ff6a00, #ee0979)',
+                        px: 5, py: 1.5,
                         borderRadius: '30px',
                         fontWeight: 600,
-                        color: '#eee',
-                        boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
+                        color: '#fff',
+                        boxShadow: '0 4px 15px rgba(255, 106, 0, 0.4)',
                         '&:hover': {
-                            background: 'linear-gradient(90deg, #555, #333)',
-                            boxShadow: '0 6px 18px rgba(0,0,0,0.7)'
+                            background: 'linear-gradient(90deg, #ee0979, #ff6a00)',
+                            boxShadow: '0 6px 18px rgba(238, 9, 121, 0.6)'
                         }
                     }}
                 >

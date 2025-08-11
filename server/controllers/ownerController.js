@@ -200,3 +200,48 @@ exports.addFacilityPhoto = async (req, res) => {
         res.status(500).json({ message: 'Failed to add photo.' });
     }
 };
+
+exports.deleteFacilityPhoto = async (req, res) => {
+    try {
+        const ownerId = req.userData.userId;
+        const { photoId } = req.params;
+
+        const photo = await FacilityPhoto.findByPk(photoId, { include: Facility });
+
+        // Security Check: Ensure the photo belongs to the owner's facility
+        if (!photo || photo.Facility.ownerId !== ownerId) {
+            return res.status(403).json({ message: "Access denied. You do not own this photo." });
+        }
+
+        // Optional: Delete from Cloudinary as well (advanced)
+        // const publicId = photo.imageUrl.split('/').pop().split('.')[0];
+        // await cloudinary.uploader.destroy(publicId);
+
+        await photo.destroy();
+        res.status(200).json({ message: 'Photo deleted successfully.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to delete photo.' });
+    }
+};
+
+exports.addMyFacility = async (req, res) => {
+    try {
+        const ownerId = req.userData.userId;
+
+        // Check if the owner already has a facility
+        const existingFacility = await Facility.findOne({ where: { ownerId } });
+        if (existingFacility) {
+            return res.status(409).json({ message: "You have already created a facility. You can edit it from the management page." });
+        }
+
+        const { name, description, address, amenities, venueType } = req.body;
+        const newFacility = await Facility.create({
+            ownerId, name, description, address, amenities, venueType,
+            status: 'pending' // All new facilities start as pending
+        });
+
+        res.status(201).json({ message: 'Facility created successfully! It is now pending admin approval.', facility: newFacility });
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to create facility.' });
+    }
+};

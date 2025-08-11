@@ -36,5 +36,8 @@ router.put('/my-facility', authMiddleware, checkOwnerRole, ownerController.updat
 // POST /api/owner/my-facility/photos - Add a photo
 router.post('/my-facility/photos', authMiddleware, checkOwnerRole, ownerController.addFacilityPhoto);
 
+router.delete('/my-facility/photos/:photoId', authMiddleware, checkOwnerRole, ownerController.deleteFacilityPhoto);
 
+
+router.post('/my-facility', authMiddleware, checkOwnerRole, ownerController.addMyFacility);
 module.exports = router;
