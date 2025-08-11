@@ -133,7 +133,7 @@ const RegisterPage = () => {
             <FormControl fullWidth margin="normal" variant="outlined" sx={{ '& .MuiInputLabel-root': { color: '#fff' }, '& .MuiSelect-select': { color: '#fff' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.4)' }, '& .MuiSvgIcon-root': { color: '#fff' } }}>
               <InputLabel id="role-select-label">I am a...</InputLabel>
               <Select labelId="role-select-label" id="role-select" name="role" value={formData.role} onChange={handleChange} label="I am a...">
-                <MenuItem value="user">User (I want to book courts)</MenuItem>
+                <MenuItem value="user">User</MenuItem>
                 <MenuItem value="owner">Facility Owner</MenuItem>
               </Select>
             </FormControl>

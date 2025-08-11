@@ -52,6 +52,7 @@ exports.getChartData = async (req, res) => {
             return res.status(404).json({ message: "Facility not found." });
         }
 
+        // 1. Daily Booking Trends (already exists)
         const bookingTrends = await Booking.findAll({
             attributes: [
                 [fn('DATE', col('bookingStartTime')), 'date'],
@@ -62,6 +63,7 @@ exports.getChartData = async (req, res) => {
             order: [['date', 'ASC']]
         });
         
+        // 2. Peak Booking Hours (already exists)
         const peakHours = await Booking.findAll({
             attributes: [
                 [fn('HOUR', col('bookingStartTime')), 'hour'],
@@ -72,7 +74,22 @@ exports.getChartData = async (req, res) => {
             order: [['hour', 'ASC']]
         });
 
-        res.status(200).json({ bookingTrends, peakHours });
+        // 3. 👇 NEW: Earnings Summary by Court
+        const earningsSummary = await Court.findAll({
+            attributes: [
+                'name',
+                [fn('SUM', col('Bookings.totalPrice')), 'totalEarnings']
+            ],
+            include: [{
+                model: Booking,
+                attributes: []
+            }],
+            where: { facilityId: facility.id },
+            group: ['Court.id'],
+            having: literal('totalEarnings > 0') // Only include courts with earnings
+        });
+
+        res.status(200).json({ bookingTrends, peakHours, earningsSummary });
     } catch (error) {
         console.error("CHART DATA ERROR:", error);
         res.status(500).json({ message: "Failed to fetch chart data." });
@@ -128,5 +145,58 @@ exports.deleteCourt = async (req, res) => {
         res.status(200).json({ message: 'Court deleted successfully.' });
     } catch (error) {
         res.status(500).json({ message: 'Failed to delete court.', error: error.message });
+    }
+};
+
+// Get the owner's facility for the management page
+exports.getMyFacility = async (req, res) => {
+    try {
+        const ownerId = req.userData.userId;
+        const facility = await Facility.findOne({
+            where: { ownerId },
+            include: [{ model: FacilityPhoto }]
+        });
+        if (!facility) return res.status(404).json({ message: "Facility not found." });
+        res.status(200).json(facility);
+    } catch (error) {
+        res.status(500).json({ message: "Failed to fetch facility data." });
+    }
+};
+
+// Update the owner's facility details
+exports.updateMyFacility = async (req, res) => {
+    try {
+        const ownerId = req.userData.userId;
+        const { name, description, address, amenities, venueType } = req.body;
+        
+        const facility = await Facility.findOne({ where: { ownerId } });
+        if (!facility) return res.status(404).json({ message: "Facility not found." });
+
+        facility.name = name;
+        facility.description = description;
+        facility.address = address;
+        facility.amenities = amenities;
+        facility.venueType = venueType;
+        await facility.save();
+
+        res.status(200).json({ message: 'Facility details updated successfully!', facility });
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to update facility.' });
+    }
+};
+
+// Add a new photo to the facility
+exports.addFacilityPhoto = async (req, res) => {
+    try {
+        const ownerId = req.userData.userId;
+        const { imageUrl } = req.body;
+
+        const facility = await Facility.findOne({ where: { ownerId } });
+        if (!facility) return res.status(404).json({ message: "Facility not found." });
+
+        const newPhoto = await FacilityPhoto.create({ imageUrl, facilityId: facility.id });
+        res.status(201).json({ message: 'Photo added!', photo: newPhoto });
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to add photo.' });
     }
 };

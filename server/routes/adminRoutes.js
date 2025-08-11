@@ -25,4 +25,6 @@ router.get('/users', authMiddleware, checkAdminRole, adminController.getAllUsers
 // PUT /api/admin/users/:userId/status - Ban or unban a user
 router.put('/users/:userId/status', authMiddleware, checkAdminRole, adminController.updateUserStatus);
 
+router.get('/stats', authMiddleware, checkAdminRole, adminController.getDashboardStats);
+
 module.exports = router;

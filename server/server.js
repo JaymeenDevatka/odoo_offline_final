@@ -12,6 +12,7 @@ const venueRoutes = require('./routes/venueRoutes');
 const bookingRoutes = require('./routes/bookingRoutes'); 
 const ownerRoutes = require('./routes/ownerRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use('/api/venues', venueRoutes);
 app.use('/api/bookings', bookingRoutes); 
 app.use('/api/owner', ownerRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/users', userRoutes);
 
 // (You will add other routes here, like for bookings and facilities)
 

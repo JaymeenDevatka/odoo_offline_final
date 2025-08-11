@@ -9,4 +9,6 @@ router.post('/', authMiddleware, bookingController.createBooking);
 // GET /api/bookings/my-bookings - Get the current user's bookings (requires login)
 router.get('/my-bookings', authMiddleware, bookingController.getMyBookings);
 
+router.put('/:bookingId/cancel', authMiddleware, bookingController.cancelBooking);
+
 module.exports = router;

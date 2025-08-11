@@ -1,6 +1,5 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-// The corrected import line now includes Typography
 import { CssBaseline, ThemeProvider, createTheme, Typography } from '@mui/material';
 
 // Import Components and Pages
@@ -11,10 +10,12 @@ import VenuesPage from './pages/VenuesPage';
 import SingleVenuePage from './pages/SingleVenuePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import VerifyOtpPage from './pages/VerifyOtpPage';
 import MyBookingsPage from './pages/MyBookingsPage';
+import ProfilePage from './pages/ProfilePage'; // 👈 Import the new page
 import FacilityOwnerDashboard from './pages/FacilityOwnerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
-import VerifyOtpPage from './pages/VerifyOtpPage';
+import FacilityManagementPage from './pages/FacilityManagementPage';
 
 // A basic theme for consistent styling
 const theme = createTheme({
@@ -43,10 +44,11 @@ function App() {
             
             {/* Protected Routes */}
             <Route path="/my-bookings" element={<ProtectedRoute><MyBookingsPage /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} /> {/* 👈 Add the new route */}
             <Route path="/owner/dashboard" element={<ProtectedRoute><FacilityOwnerDashboard /></ProtectedRoute>} />
             <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/owner/manage-facility" element={<ProtectedRoute><FacilityManagementPage /></ProtectedRoute>} />
             
-            {/* Add a catch-all route for 404 Not Found */}
             <Route path="*" element={<Typography variant="h1" align="center" sx={{mt: 5}}>404: Page Not Found</Typography>} />
           </Routes>
         </main>

@@ -6,6 +6,7 @@ const Court = require('./court');
 const Booking = require('./booking');
 // Add Review to the imports
 const Review = require('./review');
+const FacilityPhoto = require('./facilityPhoto');
 
 // --- Define Relationships ---
 
@@ -32,6 +33,9 @@ Review.belongsTo(User, { foreignKey: 'userId' });
 Facility.hasMany(Review, { foreignKey: 'facilityId' });
 Review.belongsTo(Facility, { foreignKey: 'facilityId' });
 
+Facility.hasMany(FacilityPhoto, { foreignKey: 'facilityId' });
+FacilityPhoto.belongsTo(Facility, { foreignKey: 'facilityId' });
+
 // --- Sync All Models ---
 const syncDatabase = async () => {
     try {
@@ -49,5 +53,6 @@ module.exports = {
     Facility,
     Court,
     Booking,
-    Review
+    Review,
+    FacilityPhoto
 };

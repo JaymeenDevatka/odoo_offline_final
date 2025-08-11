@@ -27,5 +27,14 @@ router.put('/courts/:courtId', authMiddleware, checkOwnerRole, ownerController.u
 // DELETE /api/owner/courts/:courtId - Delete a court
 router.delete('/courts/:courtId', authMiddleware, checkOwnerRole, ownerController.deleteCourt);
 
+// GET /api/owner/my-facility - Get facility details for editing
+router.get('/my-facility', authMiddleware, checkOwnerRole, ownerController.getMyFacility);
+
+// PUT /api/owner/my-facility - Update facility details
+router.put('/my-facility', authMiddleware, checkOwnerRole, ownerController.updateMyFacility);
+
+// POST /api/owner/my-facility/photos - Add a photo
+router.post('/my-facility/photos', authMiddleware, checkOwnerRole, ownerController.addFacilityPhoto);
+
 
 module.exports = router;

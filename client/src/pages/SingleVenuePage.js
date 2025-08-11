@@ -1,26 +1,36 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react'; // Corrected this line
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import BookingModal from '../components/BookingModal';
 import AddReviewForm from '../components/AddReviewForm';
 
-
-// Import MUI components for a modern UI
-import { Container, Typography, Box, Grid, Paper, List, ListItem, ListItemText, Button, CircularProgress, Alert, Rating } from '@mui/material';
+// MUI Imports
+import { 
+    Container, 
+    Typography, 
+    Box, 
+    Grid, 
+    Paper, 
+    List, 
+    ListItem, 
+    ListItemText, 
+    Button, 
+    CircularProgress, 
+    Alert, 
+    Rating,
+    Chip 
+} from '@mui/material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 const SingleVenuePage = () => {
-    // Hooks for getting URL parameters and navigation
     const { id } = useParams();
     const navigate = useNavigate();
+    const [venue, setVenue] = React.useState(null);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState('');
+    const [openModal, setOpenModal] = React.useState(false);
 
-    // State management for the component
-    const [venue, setVenue] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [openModal, setOpenModal] = useState(false); // State to control the booking modal
-
-    // Fetch venue data from the backend. useCallback ensures the function isn't recreated on every render.
-    const fetchVenue = useCallback(async () => {
+    const fetchVenue = React.useCallback(async () => {
         try {
             setLoading(true);
             const response = await axios.get(`http://localhost:5000/api/venues/${id}`);
@@ -32,8 +42,7 @@ const SingleVenuePage = () => {
         }
     }, [id]);
 
-    // This effect runs when the component mounts to fetch the initial data.
-    useEffect(() => {
+    React.useEffect(() => {
         fetchVenue();
     }, [fetchVenue]);
 
@@ -60,9 +69,31 @@ const SingleVenuePage = () => {
         return <Typography>Venue not found.</Typography>;
     }
 
+    const amenities = venue.amenities ? venue.amenities.split(',') : [];
+
     return (
         <Container maxWidth="lg">
             <Box sx={{ my: 4 }}>
+                {/* Photo Gallery Section */}
+                <Grid container spacing={1} sx={{ mb: 4 }}>
+                    {venue.FacilityPhotos && venue.FacilityPhotos.length > 0 ? (
+                        <Grid item xs={12} md={8} sx={{ height: '450px' }}>
+                            <img src={venue.FacilityPhotos[0].imageUrl} alt={venue.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+                        </Grid>
+                    ) : (
+                        <Grid item xs={12} md={8} sx={{ height: '450px', backgroundColor: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px' }}>
+                            <Typography>No Photos Available</Typography>
+                        </Grid>
+                    )}
+                    <Grid item xs={12} md={4} container spacing={1}>
+                        {venue.FacilityPhotos?.slice(1, 3).map(photo => (
+                            <Grid item xs={12} key={photo.id} sx={{ height: '225px' }}>
+                                <img src={photo.imageUrl} alt={venue.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+                            </Grid>
+                        ))}
+                    </Grid>
+                </Grid>
+
                 <Typography variant="h3" component="h1" gutterBottom>{venue.name}</Typography>
                 <Typography variant="h6" color="text.secondary" gutterBottom>{venue.address}</Typography>
                 
@@ -70,6 +101,18 @@ const SingleVenuePage = () => {
                     <Typography variant="h5" gutterBottom>About Venue</Typography>
                     <Typography>{venue.description}</Typography>
                 </Paper>
+
+                {/* Amenities Section */}
+                {amenities.length > 0 && (
+                    <Paper elevation={3} sx={{ p: 3, my: 4 }}>
+                        <Typography variant="h5" gutterBottom>Amenities</Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                            {amenities.map((amenity, index) => (
+                                <Chip key={index} icon={<CheckCircleIcon />} label={amenity.trim()} variant="outlined" color="success" />
+                            ))}
+                        </Box>
+                    </Paper>
+                )}
 
                 <Grid container spacing={4}>
                     <Grid item xs={12} md={8}>
@@ -99,7 +142,7 @@ const SingleVenuePage = () => {
                     </Grid>
                 </Grid>
 
-                {/* --- NEW Reviews Section --- */}
+                {/* User Reviews Section */}
                 <Paper elevation={3} sx={{ p: 3, my: 4 }}>
                     <Typography variant="h5" gutterBottom>User Reviews</Typography>
                     {venue.Reviews && venue.Reviews.length > 0 ? (
@@ -125,13 +168,11 @@ const SingleVenuePage = () => {
                     )}
                 </Paper>
 
-                {/* Conditionally render the AddReviewForm if the user is logged in */}
                 {localStorage.getItem('token') && (
                     <AddReviewForm facilityId={id} onReviewAdded={fetchVenue} />
                 )}
             </Box>
 
-            {/* Renders the Booking Modal but keeps it hidden until 'openModal' is true */}
             {venue && <BookingModal open={openModal} handleClose={handleCloseModal} courts={venue.Courts || []} />}
         </Container>
     );

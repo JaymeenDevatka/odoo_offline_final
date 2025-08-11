@@ -1,77 +1,87 @@
-const { Facility, Court, Review, User } = require("../models");
+const { Facility, Court, Review, User, FacilityPhoto } = require("../models");
 const { Op, fn, col, literal } = require("sequelize");
 const { sequelize } = require("../models");
 
 // Fetches all approved facilities with search and filter capabilities
 exports.getApprovedVenues = async (req, res) => {
-  try {
-    const {
-      search,
-      sportType,
-      maxPrice,
-      venueType,
-      minRating,
-      page = 1,
-    } = req.query;
-    const limit = 9;
-    const offset = (page - 1) * limit;
+    // Add this log to see exactly what the backend receives
+    console.log('Backend received filters:', req.query); 
+    try {
+        const { search, sportType, maxPrice, venueType, minRating, page = 1 } = req.query;
+        const limit = 9;
+        const offset = (page - 1) * limit;
 
-    let whereClause = { status: "approved" };
-    if (search) {
-      /* ... same as before ... */
+        // --- Base Query Options ---
+        let findOptions = {
+            where: { status: 'approved' },
+            include: [
+                { model: Court, attributes: ['sportType', 'pricePerHour'] },
+                { model: Review, attributes: ['rating'] }
+            ],
+            limit: limit,
+            offset: offset,
+            distinct: true // Important for correct counting with includes
+        };
+
+        // --- Apply Search Filter ---
+        if (search) {
+            findOptions.where[Op.or] = [
+                { name: { [Op.like]: `%${search}%` } },
+                { address: { [Op.like]: `%${search}%` } }
+            ];
+        }
+
+        // --- Apply Other Filters ---
+        if (venueType) {
+            findOptions.where.venueType = venueType;
+        }
+        if (sportType) {
+            findOptions.include[0].where = { sportType: { [Op.like]: `%${sportType}%` } };
+            findOptions.include[0].required = true;
+        }
+        if (maxPrice) {
+            // If sportType filter is also active, add to its where clause
+            if (findOptions.include[0].where) {
+                findOptions.include[0].where.pricePerHour = { [Op.lte]: maxPrice };
+            } else {
+                findOptions.include[0].where = { pricePerHour: { [Op.lte]: maxPrice } };
+                findOptions.include[0].required = true;
+            }
+        }
+
+        // --- Fetch and Process Data ---
+        const { count, rows: venues } = await Facility.findAndCountAll(findOptions);
+
+        // Manually process the results to calculate aggregates and apply rating filter
+        const processedVenues = venues.map(venue => {
+            const plainVenue = venue.get({ plain: true });
+            
+            const startingPrice = plainVenue.Courts?.length > 0 ? Math.min(...plainVenue.Courts.map(c => c.pricePerHour)) : 0;
+            const averageRating = plainVenue.Reviews?.length > 0 ? plainVenue.Reviews.reduce((acc, r) => acc + r.rating, 0) / plainVenue.Reviews.length : 0;
+            const sportTypes = [...new Set(plainVenue.Courts.map(c => c.sportType))].join(',');
+
+            return {
+                id: plainVenue.id,
+                name: plainVenue.name,
+                address: plainVenue.address,
+                startingPrice,
+                averageRating: averageRating.toFixed(1),
+                sportTypes
+            };
+        }).filter(venue => {
+            // Apply rating filter after calculation
+            return minRating ? venue.averageRating >= minRating : true;
+        });
+
+        res.status(200).json({
+            venues: processedVenues,
+            totalPages: Math.ceil(count / limit),
+            currentPage: parseInt(page)
+        });
+    } catch (error) {
+        console.error("VENUE FETCH ERROR:", error);
+        res.status(500).json({ message: 'Failed to fetch venues.' });
     }
-    if (venueType) {
-      // 👈 Filter for venue type
-      whereClause.venueType = venueType;
-    }
-
-    let courtWhereClause = {};
-    if (sportType) {
-      /* ... same as before ... */
-    }
-    if (maxPrice) {
-      /* ... same as before ... */
-    }
-
-    // 👇 HAVING clause for filtering by average rating
-    let havingClause = minRating
-      ? literal(`AVG(Reviews.rating) >= ${minRating}`)
-      : null;
-
-    const { count, rows: venues } = await Facility.findAndCountAll({
-      where: whereClause,
-      attributes: [
-        "id",
-        "name",
-        "address",
-        "venueType",
-        [fn("AVG", col("Reviews.rating")), "averageRating"],
-        [fn("MIN", col("Courts.pricePerHour")), "startingPrice"],
-        // 👇 This is the new line. It creates a comma-separated list of unique sports.
-        [
-          fn("GROUP_CONCAT", fn("DISTINCT", col("Courts.sportType"))),
-          "sportTypes",
-        ],
-      ],
-      include: [
-        // ... your existing includes for Court and Review ...
-      ],
-      group: ["Facility.id"],
-      having: havingClause,
-      limit: limit,
-      offset: offset,
-      subQuery: false,
-    });
-
-    res.status(200).json({
-      venues: venues,
-      totalPages: Math.ceil(count.length / limit),
-      currentPage: parseInt(page),
-    });
-  } catch (error) {
-    console.error("VENUE FETCH ERROR:", error);
-    res.status(500).json({ message: "Failed to fetch venues." });
-  }
 };
 
 exports.getVenueById = async (req, res) => {
@@ -81,11 +91,15 @@ exports.getVenueById = async (req, res) => {
       where: { id: id, status: "approved" },
       include: [
         {
-          model: Court, // Include the associated courts
+          model: Court,
           attributes: ["id", "name", "sportType", "pricePerHour"],
         },
+        {
+          model: Review,
+          include: [{ model: User, attributes: ["fullName", "avatar"] }],
+        },
+        { model: FacilityPhoto, attributes: ["id", "imageUrl"] }, // 👈 Include the photos
       ],
-      // Later you can also include Photos, Reviews, etc.
     });
 
     if (!venue) {

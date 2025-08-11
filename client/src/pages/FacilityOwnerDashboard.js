@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import AddCourtModal from '../components/AddCourtModal';
 import BookingTrendChart from '../charts/BookingTrendChart';
+import EarningsSummaryChart from '../charts/EarningsSummaryChart';
+import PeakHoursChart from '../charts/PeakHoursChart';
 
 // MUI Imports
 import {
@@ -104,13 +106,23 @@ const FacilityOwnerDashboard = () => {
                 </Grid>
 
                 {/* Section for Charts */}
-                <Box sx={{ mt: 4 }}>
-                    {chartData?.bookingTrends ? (
-                        <BookingTrendChart chartData={chartData.bookingTrends} />
-                    ) : (
-                        <Typography>Loading chart data...</Typography>
-                    )}
-                </Box>
+                <Grid container spacing={3} sx={{ mt: 4 }}>
+                    <Grid item xs={12} md={8}>
+                        {chartData?.bookingTrends ? (
+                            <BookingTrendChart chartData={chartData.bookingTrends} />
+                        ) : ( <Paper sx={{p:2, height: '100%'}}><Typography>Loading chart data...</Typography></Paper> )}
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                        {chartData?.earningsSummary ? (
+                            <EarningsSummaryChart chartData={chartData.earningsSummary} />
+                        ) : ( <Paper sx={{p:2, height: '100%'}}><Typography>Loading chart data...</Typography></Paper> )}
+                    </Grid>
+                    <Grid item xs={12}>
+                        {chartData?.peakHours ? (
+                            <PeakHoursChart chartData={chartData.peakHours} />
+                        ) : ( <Paper sx={{p:2, height: '100%'}}><Typography>Loading chart data...</Typography></Paper> )}
+                    </Grid>
+                </Grid>
                 
                 {/* Section for Court Management */}
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 5, mb: 2 }}>

@@ -1,81 +1,139 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Container, Typography, Box, Paper, List, ListItem, ListItemText, CircularProgress, Alert, Divider, Chip } from '@mui/material';
-import { format } from 'date-fns'; // Library to format dates
+import {
+  Container, Typography, Box, Card, CardContent, CardActions,
+  CircularProgress, Alert, Button, Grid, Chip, Divider, Stack
+} from '@mui/material';
+import { format, isFuture } from 'date-fns';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
+import HourglassBottomIcon from '@mui/icons-material/HourglassBottom';
 
 const MyBookingsPage = () => {
-    const [bookings, setBookings] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
 
-    useEffect(() => {
-        const fetchBookings = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    setError('You must be logged in to see your bookings.');
-                    setLoading(false);
-                    return;
-                }
-                const config = { headers: { 'Authorization': `Bearer ${token}` } };
-                const response = await axios.get('http://localhost:5000/api/bookings/my-bookings', config);
-                setBookings(response.data);
-            } catch (err) {
-                setError('Failed to fetch your bookings.');
-            } finally {
-                setLoading(false);
-            }
-        };
+  const fetchBookings = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const config = { headers: { 'Authorization': `Bearer ${token}` } };
+      const response = await axios.get('http://localhost:5000/api/bookings/my-bookings', config);
+      setBookings(response.data);
+    } catch (err) {
+      setError('Failed to fetch your bookings.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
+  useEffect(() => {
+    fetchBookings();
+  }, [fetchBookings]);
+
+  const handleCancelBooking = async (bookingId) => {
+    if (window.confirm('Are you sure you want to cancel this booking?')) {
+      try {
+        const token = localStorage.getItem('token');
+        const config = { headers: { 'Authorization': `Bearer ${token}` } };
+        const response = await axios.put(`http://localhost:5000/api/bookings/${bookingId}/cancel`, {}, config);
+        setMessage(response.data.message);
         fetchBookings();
-    }, []);
-
-    if (loading) {
-        return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>;
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to cancel booking.');
+      }
     }
+  };
 
-    if (error) {
-        return <Alert severity="error" sx={{ m: 4 }}>{error}</Alert>;
-    }
+  const statusConfig = {
+    Confirmed: { color: 'success', icon: <CheckCircleIcon /> },
+    Cancelled: { color: 'error', icon: <CancelIcon /> },
+    Pending: { color: 'warning', icon: <HourglassBottomIcon /> }
+  };
 
+  if (loading)
     return (
-        <Container maxWidth="md">
-            <Box sx={{ my: 4 }}>
-                <Typography variant="h4" component="h1" gutterBottom>
-                    My Bookings
-                </Typography>
-                <Paper elevation={3}>
-                    {bookings.length === 0 ? (
-                        <Typography sx={{ p: 3 }}>You have no bookings yet.</Typography>
-                    ) : (
-                        <List sx={{ p: 0 }}>
-                            {bookings.map((booking) => (
-                                <React.Fragment key={booking.id}>
-                                    <ListItem alignItems="flex-start">
-                                        <ListItemText
-                                            primaryTypographyProps={{ variant: 'h6' }}
-                                            primary={`${booking.Court.Facility.name} - ${booking.Court.name}`}
-                                            secondary={
-                                                <>
-                                                    <Typography component="span" variant="body2" color="text.primary">
-                                                        {format(new Date(booking.bookingStartTime), 'eeee, MMMM do, yyyy')}
-                                                    </Typography>
-                                                    <br />
-                                                    {`Time: ${format(new Date(booking.bookingStartTime), 'p')} - ${format(new Date(booking.bookingEndTime), 'p')}`}
-                                                </>
-                                            }
-                                        />
-                                        <Chip label={booking.status} color={booking.status === 'Confirmed' ? 'success' : 'default'} />
-                                    </ListItem>
-                                    <Divider variant="inset" component="li" />
-                                </React.Fragment>
-                            ))}
-                        </List>
-                    )}
-                </Paper>
-            </Box>
-        </Container>
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
+        <CircularProgress size={50} />
+      </Box>
     );
+
+  return (
+    <Container maxWidth="md" sx={{ py: 4 }}>
+      <Typography variant="h4" fontWeight="bold" gutterBottom>
+        My Bookings
+      </Typography>
+
+      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
+      {message && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMessage('')}>{message}</Alert>}
+
+      {bookings.length === 0 ? (
+        <Box textAlign="center" mt={8}>
+          <Typography variant="h6" color="text.secondary">
+            You have no bookings yet.
+          </Typography>
+        </Box>
+      ) : (
+        <Grid container spacing={3}>
+          {bookings.map((booking) => {
+            const status = statusConfig[booking.status] || { color: 'default', icon: null };
+            return (
+              <Grid item xs={12} key={booking.id}>
+                <Card
+                  elevation={4}
+                  sx={{
+                    borderRadius: 3,
+                    overflow: 'hidden',
+                    transition: 'transform 0.2s ease',
+                    '&:hover': { transform: 'translateY(-4px)' }
+                  }}
+                >
+                  <CardContent>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
+                      <Box>
+                        <Typography variant="h6" fontWeight="bold">
+                          {booking.Court.Facility.name} — {booking.Court.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {format(new Date(booking.bookingStartTime), 'eeee, MMMM do, yyyy')}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {format(new Date(booking.bookingStartTime), 'p')} — {format(new Date(booking.bookingEndTime), 'p')}
+                        </Typography>
+                      </Box>
+
+                      <Chip
+                        icon={status.icon}
+                        label={booking.status}
+                        color={status.color}
+                        sx={{ fontWeight: 'bold' }}
+                      />
+                    </Stack>
+                  </CardContent>
+
+                  <Divider />
+
+                  <CardActions sx={{ justifyContent: 'flex-end', px: 2, py: 1.5 }}>
+                    {booking.status === 'Confirmed' && isFuture(new Date(booking.bookingStartTime)) && (
+                      <Button
+                        variant="contained"
+                        color="error"
+                        size="small"
+                        onClick={() => handleCancelBooking(booking.id)}
+                      >
+                        Cancel Booking
+                      </Button>
+                    )}
+                  </CardActions>
+                </Card>
+              </Grid>
+            );
+          })}
+        </Grid>
+      )}
+    </Container>
+  );
 };
 
 export default MyBookingsPage;
