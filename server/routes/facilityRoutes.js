@@ -1,21 +1,21 @@
-const express = require('express');
+// routes/facilityRoutes.js
+
+const express = require("express");
 const router = express.Router();
 
-const facilityController = require('../controllers/facilityController');
-const authMiddleware = require('../middleware/authMiddleware');
+const facilityController = require("../controllers/facilityController"); // ✅ Correct import
+const authMiddleware = require("../middleware/authMiddleware");
+const { authorizeRoles } = require("../middleware/roleMiddleware");
 
-// Custom middleware to check if the user has the 'owner' role
-const checkOwnerRole = (req, res, next) => {
-    if (req.userData && req.userData.role === 'owner') {
-        next(); // If user is an owner, proceed to the next function
-    } else {
-        res.status(403).json({ message: 'Access denied. Only facility owners can perform this action.' });
-    }
-};
-
-// Route to create a new facility
-// POST /api/facilities
-// This route is protected by two middleware functions
-router.post('/', authMiddleware, checkOwnerRole, facilityController.createFacility);
+// Route: Create a new facility
+// Method: POST
+// URL: /api/facilities
+// Middlewares: authMiddleware (checks JWT) + authorizeRoles("owner")
+router.post(
+    "/",
+    authMiddleware,
+    authorizeRoles("owner"),
+    facilityController.createFacility
+);
 
 module.exports = router;

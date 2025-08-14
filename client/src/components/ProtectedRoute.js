@@ -1,19 +1,23 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import React from "react";
+import { Navigate } from "react-router-dom";
+import { jwtDecode } from 'jwt-decode';
 
-const ProtectedRoute = ({ children }) => {
-    // Check for the token in localStorage
-    const token = localStorage.getItem('token');
-    
-    // For now, we just check if a token exists.
-    // Later, you could decode it to check the user's role.
-    if (!token) {
-        // If no token, redirect to the login page
-        return <Navigate to="/login" />;
-    }
-
-    // If a token exists, render the component that was passed in
-    return children;
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    return <Navigate to="/login" />;
+  }
+  let userRole = null;
+  try {
+    const decoded = jwtDecode(token);
+    userRole = decoded.role;
+  } catch (e) {
+    return <Navigate to="/login" />;
+  }
+  if (allowedRoles && !allowedRoles.includes(userRole)) {
+    return <Navigate to="/" />;
+  }
+  return children;
 };
 
 export default ProtectedRoute;

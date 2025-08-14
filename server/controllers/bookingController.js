@@ -1,43 +1,78 @@
-const { Booking, Court, Facility } = require("../models");
+const { Booking, Court, Facility, BlockedSlot } = require("../models");
 const { Op } = require("sequelize");
 
 // Create a new booking
 exports.createBooking = async (req, res) => {
   try {
     const userId = req.userData.userId;
-    // 👇 Get duration from the request body
     const { courtId, bookingStartTime, durationInHours = 1 } = req.body;
 
     const startTime = new Date(bookingStartTime);
-    // 👇 Calculate end time based on duration
-    const bookingEndTime = new Date(
+    const endTime = new Date(
       startTime.getTime() + durationInHours * 60 * 60 * 1000
     );
 
-    // ... (The existing logic for checking overlaps remains the same) ...
-    const existingBooking = await Booking.findOne({
-      /* ... */
-    });
-    if (existingBooking) {
-      /* ... */
+    const court = await Court.findByPk(courtId);
+    if (!court) {
+        return res.status(404).json({ message: 'Court not found.' });
     }
 
-    const court = await Court.findByPk(courtId);
-    // 👇 Calculate total price based on duration
+    // Check 1: Is the court open at this hour?
+    if (court.operatingHoursStart && court.operatingHoursEnd) {
+        const bookingHour = startTime.getHours();
+        const openingHour = parseInt(court.operatingHoursStart.split(':')[0]);
+        const closingHour = parseInt(court.operatingHoursEnd.split(':')[0]);
+        if (bookingHour < openingHour || bookingHour >= closingHour) {
+            return res.status(400).json({ message: `This court is only open from ${court.operatingHoursStart} to ${court.operatingHoursEnd}.` });
+        }
+    }
+
+    // Check 2: Is this slot manually blocked for maintenance?
+    const isBlocked = await BlockedSlot.findOne({
+        where: {
+            courtId: courtId,
+            [Op.or]: [
+                { startTime: { [Op.lt]: endTime, [Op.gt]: startTime } },
+                { endTime: { [Op.lt]: endTime, [Op.gt]: startTime } },
+                { startTime: { [Op.lte]: startTime }, endTime: { [Op.gte]: endTime } }
+            ]
+        }
+    });
+    if (isBlocked) {
+        return res.status(409).json({ message: `This time slot is blocked for: ${isBlocked.reason}.` });
+    }
+
+    // Check 3: Is there an overlapping booking?
+    const existingBooking = await Booking.findOne({
+      where: {
+        courtId: courtId,
+        status: { [Op.ne]: 'Cancelled' }, // Don't check against cancelled bookings
+        [Op.or]: [
+            { bookingStartTime: { [Op.lt]: endTime, [Op.gt]: startTime } },
+            { bookingEndTime: { [Op.lt]: endTime, [Op.gt]: startTime } },
+            { bookingStartTime: { [Op.lte]: startTime }, bookingEndTime: { [Op.gte]: endTime } }
+        ]
+      },
+    });
+
+    if (existingBooking) {
+      return res.status(409).json({ message: "This time slot is already booked. Please choose another time." });
+    }
+
     const totalPrice = court.pricePerHour * durationInHours;
 
     const newBooking = await Booking.create({
       userId,
       courtId,
-      bookingStartTime,
-      bookingEndTime,
-      totalPrice, // Use the new dynamic price
-      status: "Confirmed",
+      bookingStartTime: startTime,
+      bookingEndTime: endTime,
+      totalPrice,
+      status: "Pending", // New bookings are now pending approval
     });
 
     res
       .status(201)
-      .json({ message: "Booking confirmed!", booking: newBooking });
+      .json({ message: "Booking request sent! You will be notified upon confirmation.", booking: newBooking });
   } catch (error) {
     console.error("CREATE BOOKING ERROR:", error);
     res
@@ -72,6 +107,7 @@ exports.getMyBookings = async (req, res) => {
   }
 };
 
+// Cancel a booking
 exports.cancelBooking = async (req, res) => {
     try {
         const userId = req.userData.userId;
@@ -87,18 +123,14 @@ exports.cancelBooking = async (req, res) => {
             return res.status(404).json({ message: 'Booking not found.' });
         }
 
-        // Security check: User can only cancel their own bookings
         if (booking.userId !== userId) {
             return res.status(403).json({ message: 'Access denied. You can only cancel your own bookings.' });
         }
         
-        // Business logic: Check if the booking is already cancelled or completed
-        if (booking.status !== 'Confirmed') {
+        if (booking.status !== 'Confirmed' && booking.status !== 'Pending') {
             return res.status(400).json({ message: `Cannot cancel a booking with status: ${booking.status}.` });
         }
 
-        // Business logic: User can only cancel future bookings
-        // This comparison is now more robust
         if (new Date(booking.bookingStartTime) < new Date()) {
             return res.status(400).json({ message: 'This booking has already passed and cannot be cancelled.' });
         }
@@ -109,7 +141,6 @@ exports.cancelBooking = async (req, res) => {
         res.status(200).json({ message: 'Your booking has been cancelled successfully.' });
 
     } catch (error) {
-        // Add detailed logging for better debugging on the server
         console.error("CANCEL BOOKING ERROR:", error);
         res.status(500).json({ message: 'An unexpected error occurred while trying to cancel the booking.' });
     }

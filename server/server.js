@@ -6,7 +6,7 @@ const { syncDatabase } = require('./models');
 
 const sequelize = require('./config/database');
 const authRoutes = require('./routes/auth'); // We will create these routes next
-const facilityRoutes = require('./routes/facilityRoutes');
+const {facilityRoutes} = require('./routes/facilityRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const venueRoutes = require('./routes/venueRoutes');
 const bookingRoutes = require('./routes/bookingRoutes'); 
@@ -39,24 +39,11 @@ app.use('/api/users', userRoutes);
 // --- Server Initialization ---
 const PORT = process.env.PORT || 5000;
 
-// Test DB connection and sync models
-sequelize.authenticate()
-    .then(() => {
-        console.log('✅ Database connection has been established successfully.');
-        // Sync all defined models to the DB.
-        return sequelize.sync(); 
-    })
-    .then(() => {
-        app.listen(PORT, () => {
-            console.log(`🚀 Server is running on port ${PORT}`);
-        });
-    })
-    .catch(err => {
-        console.error('❌ Unable to connect to the database:', err);
-    });
-
 const startServer = async () => {
     try {
+        await sequelize.authenticate();
+        console.log('✅ Database connection has been established successfully.');
+        await sequelize.sync();
         await syncDatabase();
         app.listen(PORT, () => {
             console.log(`🚀 Server is running on port ${PORT}`);
@@ -64,6 +51,6 @@ const startServer = async () => {
     } catch (error) {
         console.error('❌ Failed to start the server:', error);
     }
-};
+}
 
 startServer();

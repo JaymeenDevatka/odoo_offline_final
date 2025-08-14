@@ -12,6 +12,8 @@ const checkOwnerRole = (req, res, next) => {
     }
 };
 
+router.put('/bookings/:bookingId/status', authMiddleware, checkOwnerRole, ownerController.updateBookingStatus);
+
 // GET /api/owner/dashboard - Get all data for the owner dashboard
 router.get('/dashboard', authMiddleware, checkOwnerRole, ownerController.getOwnerDashboard);
 
